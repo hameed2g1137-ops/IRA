@@ -575,9 +575,10 @@
                     </div>
                 </div>
 
-                <!-- Right: Image Slider with SEO Alt Tags -->
+                <!-- Right: Image Slider -->
                 <div class="w-full md:w-1/2 h-64 md:h-full relative bg-gray-900 premium-slider-container">
                     <div id="pres-slider-track" class="premium-slider-track">
+                        <!-- Used exact GitHub casing provided in previous prompts -->
                         <img id="pres-img-1" src="" class="premium-slider-slide" alt="IRA Global Solutions Service Overview 1">
                         <img id="pres-img-2" src="" class="premium-slider-slide" alt="IRA Global Solutions Service Overview 2">
                         <img id="pres-img-3" src="" class="premium-slider-slide" alt="IRA Global Solutions Service Overview 3">
@@ -707,7 +708,7 @@
         <div class="max-w-7xl mx-auto bg-white/10 backdrop-blur-xl p-12 lg:p-20 rounded-[3rem] border border-white/20 shadow-[0_0_50px_rgba(139,92,246,0.3)] grid lg:grid-cols-2 gap-20 relative z-10">
             <div data-aos="fade-right">
                 <p class="text-sm uppercase tracking-widest mb-4 font-bold text-accent">Get In Touch</p>
-                <h2 class="font-kanit text-4xl lg:text-5xl font-black mb-12 leading-tight tracking-tight text-white">Ready to Collaborate with IRA Global Solutions?</h2>
+                <h2 class="font-kanit text-4xl lg:text-5xl font-black mb-12 leading-tight tracking-tight text-white">Ready to Collaborate?</h2>
                 
                 <div class="space-y-10">
                     <div class="flex items-center gap-6 group">
@@ -768,7 +769,8 @@
     </div>
 
     <!-- Dark Footer -->
-    <footer class="bg-[#050505] border-t border-gray-900 pt-20 pb-10 px-8 lg:px-20 text-white relative">
+    <footer class="bg-[#050505] border-t border-gray-900 pt-20 pb-10 px-8 lg:px-20 text-white relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiMzMzMzMzMiLz48L3N2Zz4=')] opacity-20 z-0"></div>
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 mb-16 relative z-10">
             <div>
                 <div class="flex items-center gap-4 mb-6">
@@ -909,7 +911,7 @@
                 title: "SOC Solutions",
                 icon: "shield-check",
                 desc: "Comprehensive cybersecurity monitoring and incident response architecture powered by industry-leading platforms and enterprise security frameworks.",
-                images: ["SOC1.png", "SOC2.png", "SOC3.png"],
+                images: ["Soc1.png", "Soc2.png", "Soc3.png"],
                 details: `
                     <p class="text-white/80 mb-6 text-sm">We provide expert deployment, management, and continuous monitoring across the following elite security infrastructure:</p>
                     <ul class="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4 text-xs md:text-sm font-medium text-white/90">
@@ -931,6 +933,20 @@
             }
         ];
 
+        // Global Grid Sliders Init (Continuous Loop for background cards)
+        document.querySelectorAll('.service-card-wrapper .premium-slider-container').forEach(container => {
+            const track = container.querySelector('.premium-slider-track');
+            const slides = track.querySelectorAll('.premium-slider-slide');
+            let currentIndex = 0;
+            if(slides.length > 1) {
+                setInterval(() => {
+                    currentIndex = (currentIndex + 1) % slides.length;
+                    track.style.transform = `translateX(-${currentIndex * 100}%)`;
+                }, 3000);
+            }
+        });
+
+        // Presentation Modal State Variables
         let curServiceIdx = 0;
         let presSliderInt, autoRotTimeout;
         let isExpanded = false;
@@ -949,7 +965,7 @@
         }
 
         function closePresentation() {
-            clearServiceTimers(false);
+            clearServiceTimers(); // Kill everything, including slider
             const modal = document.getElementById('presentation-modal');
             modal.style.opacity = '0';
             setTimeout(() => {
@@ -960,7 +976,7 @@
         }
 
         function playServiceAnim() {
-            clearServiceTimers(false);
+            clearServiceTimers(); // Stop previous slider interval
             isExpanded = false;
             
             const data = servicesData[curServiceIdx];
@@ -981,6 +997,7 @@
             document.getElementById('pres-desc').innerText = '';
             document.getElementById('pres-desc').classList.add('cursor-blink');
             
+            // Set up Presentation Slider (Independent of Auto Rotation)
             presSlideIdx = 0;
             document.getElementById('pres-slider-track').style.transform = `translateX(0%)`;
             presSliderInt = setInterval(() => {
@@ -988,12 +1005,12 @@
                 document.getElementById('pres-slider-track').style.transform = `translateX(-${presSlideIdx * 100}%)`;
             }, 3000);
 
+            // 3D Flip Anim
             gsap.fromTo(card, 
                 { rotateY: -90, opacity: 0, scale: 0.9 },
                 { rotateY: 0, opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.2)", 
                   onComplete: () => {
                       gsap.to('#pres-title', {opacity: 1, y: 0, duration: 0.4});
-                      
                       typeTween = gsap.to('#pres-desc', {
                           text: data.desc, 
                           duration: data.desc.length * 0.035,
@@ -1021,7 +1038,9 @@
         }
 
         function expandPresentation() {
-            clearServiceTimers(true); 
+            clearTimeout(autoRotTimeout); // Stop auto rotation, but leave presSliderInt running!
+            if(typeTween) typeTween.kill();
+            
             isExpanded = true;
             document.getElementById('pres-desc').classList.remove('cursor-blink');
             
@@ -1049,15 +1068,13 @@
             }});
         }
 
-        function clearServiceTimers(keepSlider = false) {
+        function clearServiceTimers() {
             clearTimeout(autoRotTimeout);
+            clearInterval(presSliderInt);
             if(typeTween) typeTween.kill();
-            if(!keepSlider) {
-                clearInterval(presSliderInt);
-            }
         }
 
-        // Contact Form Logic
+        // Backend Contact Form Logic
         async function submitContactForm(event) {
             event.preventDefault(); 
             const btn = document.getElementById('submitBtn');
@@ -1096,7 +1113,7 @@
             }, 200);
         }
 
-        // Chatbot UI & Custom FAQs
+        // Chatbot UI & Custom FAQ Logic
         function toggleChat() { document.getElementById('chatbot-window').classList.toggle('active'); }
         
         function appendUserMessage(text) {
@@ -1134,7 +1151,7 @@
             hideFAQs();
             appendUserMessage(question);
             setTimeout(() => {
-                appendBotMessage("IRA Global Solutions specializes in Cloud Services (AWS/Azure), AI Automation, Dialer Solutions, and Security Operations Center (SOC) Solutions.");
+                appendBotMessage("We specialize in Cloud Services, AI Automation, Dialer Solutions, and Security Operations Center (SOC) Solutions. Feel free to explore our Services section for more details!");
             }, 800);
         }
 
@@ -1154,7 +1171,7 @@
             appendUserMessage(text);
             input.value = "";
             setTimeout(() => {
-                appendBotMessage("Thank you for reaching out to IRA Global Solutions. Our team will contact you soon.");
+                appendBotMessage("Thank you for reaching out. Our team will contact you soon.");
             }, 800);
         }
 
